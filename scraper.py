@@ -1,6 +1,3 @@
-
-
-
 import dotenv
 import sys
 import os
@@ -21,8 +18,18 @@ auth = tweepy.OAuth1UserHandler(
 
 api = tweepy.API(auth)
 
-nix_tweets = api.search_tweets(q="nixos", count=100)
+flox_tweets = api.search_tweets(q="@floxdevelopment", count=100)
+nixos_tweets = api.search_tweets(q="nixos", count=100)
+nixos_org_tweets = api.search_tweets(q="@nixos_org", count=100)
 
-for tweet in nix_tweets:
+for tweet in flox_tweets:
     print(tweet.text)
+
+for tweet in nixos_tweets:
+    print(tweet.text)
+
+for tweet in nixos_org_tweets:
+    print(tweet.text)
+
+
 
