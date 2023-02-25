@@ -16,12 +16,13 @@ AIRTABLE_TABLE_ID = os.getenv("AIRTABLE_TABLE_ID")
 NEON_CONNSTRG = os.getenv("NEON_CONNSTRG")
 
 # use sqlalchemy to connect with neon and push tweets there too
+import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy import text
 
-neon_conn = create_engine(NEON_CONNSTRG)
+neon_eng = create_engine(NEON_CONNSTRG)
 
-test = neon_conn.connect()
+neon_conn = neon_eng.connect()
 
 import tweepy
 
@@ -34,24 +35,19 @@ api = tweepy.API(auth)
 from pyairtable import Table
 table = Table(AIRTABLE_API_KEY, AIRTABLE_BASE_ID, AIRTABLE_TABLE_ID)
 
-flox_tweets = api.search_tweets(q="@floxdevelopment", result_type="recent", count=5)
-
 table_pull = table.all(fields=["TweetID"])
-
-tweet_id_list = []
 
 def track_tweets(keyword:str, count:int):
 
     tweets = api.search_tweets(q=keyword, result_type="recent", count=count)
-
-    for id in table_pull:
-        tweet_id_list.append(id["fields"]["TweetID"])
 
     for tweet in tweets:
         tweet_id = str(tweet.id)
         tweet_text = tweet.text
         user_url = "https://twitter.com/"+tweet.user.screen_name
         nix_tweets_uuid = uuid.uuid4()
+            
+        # test = neon_conn.execute(text("SELECT * FROM nix_tweets WHERE tweetid=:tweetid"), [{"tweetid": int(tweet_id)}]).mappings()
 
         table.create(
             {
@@ -61,14 +57,14 @@ def track_tweets(keyword:str, count:int):
                                 }
             )
 
-        # need to insert uuid here
+        neon_conn.execute(
+                text(
+                "INSERT INTO nix_tweets (id, tweetid, tweettext, userurl) VALUES (:id, :tweetid, :tweettext, :userurl)"
+                ),
+                [{"id":nix_tweets_uuid, "tweetid": int(tweet_id), "tweettext": tweet_text, "userurl": user_url}]
+                )
+        neon_conn.commit()
 
-        test.execute(
-            text("INSERT INTO nix_tweets (id, tweetid, tweettext, userurl) VALUES (:id, :tweetid, :tweettext, :userurl)"),
-            [{"id":nix_tweets_uuid, "tweetid": int(tweet_id), "tweettext": tweet_text, "userurl": user_url}]
-            )
-        test.commit()
-
-track_tweets("@floxdevelopment", 5)
+track_tweets("@floxdevelopment", 50)
 
 print("Done!")
