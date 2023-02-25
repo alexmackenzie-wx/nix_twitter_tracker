@@ -55,16 +55,16 @@ def track_tweets(keyword:str, count:int):
                 "TweetText": tweet_text,
                 "UserURL": user_url,
                                 }
-            )
-
+            )                
+        
         neon_conn.execute(
                 text(
-                "INSERT INTO nix_tweets (id, tweetid, tweettext, userurl) VALUES (:id, :tweetid, :tweettext, :userurl)"
+                "INSERT INTO nix_tweets_two (id, tweetid, tweettext, userurl) VALUES (:id, :tweetid, :tweettext, :userurl) ON CONFLICT (tweetid) DO NOTHING"
                 ),
                 [{"id":nix_tweets_uuid, "tweetid": int(tweet_id), "tweettext": tweet_text, "userurl": user_url}]
                 )
         neon_conn.commit()
 
-track_tweets("@floxdevelopment", 50)
+track_tweets("@floxdevelopment", 10)
 
 print("Done!")
