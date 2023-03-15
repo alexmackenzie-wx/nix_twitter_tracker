@@ -14,6 +14,7 @@ AIRTABLE_API_KEY = os.getenv("AIRTABLE_API_KEY")
 AIRTABLE_BASE_ID = os.getenv("AIRTABLE_BASE_ID")
 AIRTABLE_TABLE_ID = os.getenv("AIRTABLE_TABLE_ID")
 NEON_CONNSTRG = os.getenv("NEON_CONNSTRG")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 
 # use sqlalchemy to connect with neon and push tweets there too
 import sqlalchemy
@@ -23,6 +24,12 @@ from sqlalchemy import text
 neon_eng = create_engine(NEON_CONNSTRG)
 
 neon_conn = neon_eng.connect()
+
+import discord
+intents = discord.Intents.default()
+intents.message_content = True
+
+client = discord.Client(intents=intents)
 
 import tweepy
 
@@ -46,8 +53,12 @@ def track_tweets(keyword:str, count:int):
         tweet_text = tweet.text
         user_url = "https://twitter.com/"+tweet.user.screen_name
         nix_tweets_uuid = uuid.uuid4()
-            
-        # test = neon_conn.execute(text("SELECT * FROM nix_tweets WHERE tweetid=:tweetid"), [{"tweetid": int(tweet_id)}]).mappings()
+  
+        @client.event
+        async def on_ready():
+            channel = client.get_channel(1083715810046005320) 
+            await channel.send("New Nix Tweet! See: "+user_url)
+            print(f'We have logged in as {channel}')
 
         table.create(
             {
@@ -65,6 +76,8 @@ def track_tweets(keyword:str, count:int):
                 )
         neon_conn.commit()
 
-track_tweets("@floxdevelopment", 10)
+        client.run(DISCORD_TOKEN)
+
+track_tweets("@nixos_org", 10)
 
 print("Done!")
